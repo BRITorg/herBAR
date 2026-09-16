@@ -14,13 +14,13 @@ they're ~90MB, almost entirely the real specimen photos used for testing.
 A sparse partial clone skips them and only downloads the files needed to
 run herbar.py:
 
-	git clone --filter=blob:none --sparse git@github.com:jbest/herBAR.git
+	git clone --filter=blob:none --sparse git@github.com:BRITorg/herBAR.git
 
 If you later need the test images and test suite too, expand it in place:
 
 	git sparse-checkout add image_test tests
 
-Or just clone normally (`git clone git@github.com:jbest/herBAR.git`) to get
+Or just clone normally (`git clone git@github.com:BRITorg/herBAR.git`) to get
 everything from the start.
 
 ### Installation
