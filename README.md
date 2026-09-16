@@ -9,11 +9,34 @@ zbar
 
 ### Installation
 
-Install ZBar for your platform (https://zbar.sourceforge.net/)
+#### Option A: uv (recommended, especially on Windows)
 
-Download the script file (herbar.py) to your local computer and install the required modules.
-To install modules, use pip:
+[uv](https://docs.astral.sh/uv/) installs Python dependencies from a single
+binary, without a separate venv-create/activate step.
 
+1. Install uv once per machine:
+   - Windows (PowerShell): `irm https://astral.sh/uv/install.ps1 | iex`
+   - macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+2. From this repo's directory, just run herbar.py through uv -- the first
+   run creates the environment and installs the pinned dependencies
+   automatically:
+
+    uv run herbar.py -s <path-to-images>
+
+On Windows, pyzbar's wheel bundles the zbar DLL it needs, so a separate
+ZBar install typically isn't required. (Worth double-checking on your
+actual target machine before rolling this out broadly.)
+
+#### Option B: pip + venv
+
+Install ZBar for your platform (https://zbar.sourceforge.net/) -- on
+macOS/Linux this is a separate system library pyzbar links against.
+
+Download the script file (herbar.py) to your local computer, create a
+virtual environment, and install the required modules:
+
+	python3 -m venv .venv
+	source .venv/bin/activate        # Windows: .venv\Scripts\activate
 	pip install -r requirements.txt
 
 ### Usage
@@ -32,7 +55,9 @@ To install modules, use pip:
 	-d DEFAULT_PREFIX, --default_prefix DEFAULT_PREFIX
                         Barcode prefix string which will be used as the
                         primary barcode when multiple barcodes are found.
-                        Suppresses multiple barcode names in filename.
+                        Suppresses multiple barcode names in filename only
+                        when a barcode matches the prefix; otherwise all
+                        barcodes found are still recorded in the filename.
 	-b BATCH, --batch BATCH
                         Flags written to batch_flags, can be used for
                         filtering downstream data.
@@ -63,3 +88,5 @@ nothing needs to be reset between runs.
 On Apple Silicon Macs where ZBar is only installed via an Intel-only
 Homebrew (`/usr/local`), create the virtualenv with `arch -x86_64
 python3 -m venv .venv` so it links against the matching zbar library.
+
+Alternatively, with uv: `uv sync --group dev` then `uv run pytest`.
