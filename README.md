@@ -1,6 +1,20 @@
 # herBAR
 A barcode renamer for herbarium specimens
 
+When herbarium specimens are photographed, each image is initially saved
+under a generic camera-assigned filename rather than the specimen's own
+barcode identifier. herbar.py scans a directory of specimen photos,
+decodes the CODE39 barcode printed on each specimen label (using
+[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar), and
+renames the image to that barcode value -- along with any matching raw
+archival file (CR2, CR3, NEF, DNG, etc.) captured alongside it. It
+handles the messy real-world cases that come up during a digitization
+batch: missing or unreadable barcodes, multiple barcodes on one image,
+and duplicate barcode values across different files. Every file it
+processes -- renamed or not -- is recorded in a CSV log for review, and
+a dry-run mode lets you preview what would happen before renaming
+anything for real.
+
 ### Requirements
 
 Python 3.*  
