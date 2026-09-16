@@ -1,9 +1,15 @@
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
 
-FIXTURES_DIR = Path(__file__).resolve().parent.parent / "image_test"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+FIXTURES_DIR = REPO_ROOT / "image_test"
+
+# Allow `import herbar` for unit-testing individual functions directly,
+# without needing to launch it as a subprocess.
+sys.path.insert(0, str(REPO_ROOT))
 
 
 @pytest.fixture

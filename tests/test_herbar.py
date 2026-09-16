@@ -93,3 +93,63 @@ def test_default_prefix_with_no_match_still_logs_all_barcodes(sandbox, tmp_path)
     )
     assert "_BARCODES[" in match
     assert "none matched default prefix ZZZ" in result.stdout
+
+
+def test_jpeg_rename_suffix_applies_to_jpeg_only(sandbox, tmp_path):
+    run_herbar(sandbox, tmp_path / "logs", "-j")
+
+    renamed = names(sandbox)
+    assert "BRIT180138_unprocessed.JPG" in renamed
+    # the archival file is not the one downstream processing regenerates
+    # a JPEG from, so it keeps the plain barcode name
+    assert "BRIT180138.CR2" in renamed
+
+
+def test_prepend_code_applies_to_both_jpeg_and_raw(sandbox, tmp_path):
+    run_herbar(sandbox, tmp_path / "logs", "-c", "HERB")
+
+    renamed = names(sandbox)
+    assert "HERBBRIT180138.JPG" in renamed
+    assert "HERBBRIT180138.CR2" in renamed
+
+
+def test_missing_archival_file_still_renames_jpg_but_logs_failure(sandbox, tmp_path):
+    # 100256.jpg decodes two barcodes (100256, 100255) but has no matching
+    # raw file anywhere in image_test/.
+    _, rows = run_herbar(sandbox, tmp_path / "logs")
+
+    matching_rows = [r for r in rows if r["basename"] == "100256.jpg"]
+    assert len(matching_rows) == 2
+    assert {r["status"] for r in matching_rows} == {"renamed", "failed"}
+
+    failed_row = next(r for r in matching_rows if r["status"] == "failed")
+    assert failed_row["status_details"] == "missing archival file"
+
+    assert "100256.jpg" not in names(sandbox)
+    renamed = next(
+        n for n in names(sandbox)
+        if n.endswith(".jpg") and "100256" in n and "100255" in n
+    )
+    assert "_BARCODES[" in renamed
+
+
+def test_tiff_input_is_scanned_and_renamed(sandbox, tmp_path):
+    # TIFF_TEST-00001.tif/.CR2 are synthetic fixtures (generated, not real
+    # specimen photos) covering the .tif branch of INPUT_FILE_TYPES, which
+    # none of the real photos exercise.
+    run_herbar(sandbox, tmp_path / "logs")
+
+    renamed = names(sandbox)
+    assert "TIFFTEST0001.tif" in renamed
+    assert "TIFFTEST0001.CR2" in renamed
+
+
+def test_cr3_archive_extension_is_matched(sandbox, tmp_path):
+    # CR3_TEST-00001.JPG/.CR3 are synthetic fixtures covering the .CR3
+    # branch of ARCHIVE_FILE_TYPES (Canon EOS R5 raw), which none of the
+    # real photos exercise.
+    run_herbar(sandbox, tmp_path / "logs")
+
+    renamed = names(sandbox)
+    assert "CR3TEST0001.JPG" in renamed
+    assert "CR3TEST0001.CR3" in renamed

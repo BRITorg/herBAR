@@ -263,6 +263,24 @@ def get_default_barcode(barcodes=None, default_prefix=None):
         # return first barcode if no default prefix is specified
         return barcodes[0]['data'], False
 
+def find_archive_file(file_stem, sibling_names):
+    """Return the sibling filename that pairs with file_stem as its
+    archival file, or None if there isn't one.
+
+    Stem and extension are compared case-insensitively in Python so the
+    match is consistent regardless of the filesystem's own case
+    sensitivity (relying on filesystem case-folding is inconsistent
+    across platforms: case-insensitive on macOS/Windows by default,
+    case-sensitive on Linux).
+    """
+    file_stem_lower = file_stem.lower()
+    for sibling in sibling_names:
+        sibling_path = Path(sibling)
+        if (sibling_path.stem.lower() == file_stem_lower
+                and sibling_path.suffix.lower() in ARCHIVE_FILE_TYPES):
+            return sibling
+    return None
+
 def walk(path=None):
     global files_analyzed, renames_failed, missing_barcodes, files_processed
     for root, dirs, files in os.walk(path):
@@ -276,19 +294,9 @@ def walk(path=None):
                 barcodes = get_barcodes(file_path=file_path)
                 if barcodes:
                     file_stem = file_path.stem
-                    # find archive files matching stem
-                    # compared case-insensitively so matching is consistent
-                    # regardless of the filesystem's own case sensitivity
-                    arch_file_path = None
-                    file_stem_lower = file_stem.lower()
-
-                    for sibling in files:
-                        sibling_path = Path(sibling)
-                        if (sibling_path.stem.lower() == file_stem_lower
-                                and sibling_path.suffix.lower() in ARCHIVE_FILE_TYPES):
-                            arch_file_path = file_path.parent / sibling
-                            # stop looking for archive file, go with first found
-                            break
+                    # find archive file matching stem
+                    matched_archive_name = find_archive_file(file_stem, files)
+                    arch_file_path = file_path.parent / matched_archive_name if matched_archive_name else None
                     image_event_id = str(uuid.uuid4())
                     arch_file_uuid = str(uuid.uuid4())
                     derivative_file_uuid = str(uuid.uuid4())
