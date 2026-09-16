@@ -385,7 +385,8 @@ if __name__ == "__main__":
         help="Project name for filtering in database")
     ap.add_argument("-d", "--default_prefix", required=False,
         help="Barcode prefix string which will be used as the primary barcode when multiple barcodes are found. \
-        Suppresses multiple barcode names in filename.")
+        Suppresses multiple barcode names in filename only when a barcode matches the prefix; \
+        otherwise all barcodes found are still recorded in the filename.")
     ap.add_argument("-b", "--batch", required=False,
         help="Flags written to batch_flags, can be used for filtering downstream data.")
     ap.add_argument("-o", "--output", nargs='?', default='primary', const='secondary',
