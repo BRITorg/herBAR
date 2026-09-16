@@ -7,6 +7,22 @@ Python 3.*
 Pillow  
 zbar  
 
+### Getting the code
+
+For day-to-day use, you don't need `image_test/` or `tests/` -- together
+they're ~90MB, almost entirely the real specimen photos used for testing.
+A sparse partial clone skips them and only downloads the files needed to
+run herbar.py:
+
+	git clone --filter=blob:none --sparse git@github.com:jbest/herBAR.git
+
+If you later need the test images and test suite too, expand it in place:
+
+	git sparse-checkout add image_test tests
+
+Or just clone normally (`git clone git@github.com:jbest/herBAR.git`) to get
+everything from the start.
+
 ### Installation
 
 #### Option A: uv (recommended, especially on Windows)
