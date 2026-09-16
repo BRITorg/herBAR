@@ -465,11 +465,13 @@ if __name__ == "__main__":
 
     # Start scanning input directory
     print('scanning:', batch_path)
-    walk(path=batch_path)
+    try:
+        walk(path=batch_path)
+    finally:
+        # Ensure CSV log file is flushed and closed even if scanning raises
+        csvfile.close()
     # Scan complete
 
-    # Close CSV log file
-    csvfile.close()
     analysis_end_time = datetime.now()
 
     print('Started:', analysis_start_time)
