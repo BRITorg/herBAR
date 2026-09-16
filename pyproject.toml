@@ -5,8 +5,11 @@ description = "A barcode renamer for herbarium specimens"
 requires-python = ">=3.10"
 dependencies = [
     "Pillow==12.3.0",
-    "pyzbar==0.1.9",
     "tqdm==4.70.1",
+    # Barcode decoding backends -- herbar.py's --backend flag selects between
+    # them at runtime, so only the one(s) you plan to use need to be installed.
+    "pyzbar==0.1.9",      # --backend zbar (default); also requires a system ZBar install
+    "zxing-cpp==3.1.1",   # --backend zxing; self-contained, no system library needed
 ]
 
 [dependency-groups]

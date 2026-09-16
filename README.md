@@ -129,3 +129,35 @@ Homebrew (`/usr/local`), create the virtualenv with `arch -x86_64
 python3 -m venv .venv` so it links against the matching zbar library.
 
 Alternatively, with uv: `uv sync --group dev` then `uv run pytest`.
+
+### Trying the `add-zxing-backend-option` branch
+
+This branch adds the `--backend` flag described above so `zbar` and
+`zxing-cpp` can be evaluated side by side before deciding whether to
+switch permanently. To check it out:
+
+	git fetch origin
+	git checkout add-zxing-backend-option
+	python3 -m venv .venv && source .venv/bin/activate
+	pip install -r requirements.txt
+
+(or `uv sync` instead of the venv/pip steps.) This installs both
+decoding backends, so no separate ZBar install is needed just to try
+`--backend zxing` -- useful on Apple Silicon Macs where ZBar is
+typically only available as an Intel-only Homebrew build.
+
+Run herbar.py against the real photos in `image_test/` with each
+backend in turn, using `-n` (dry-run) so nothing is actually renamed:
+
+	python3 herbar.py -s image_test -o /tmp/herbar-zbar  -n -v --backend zbar
+	python3 herbar.py -s image_test -o /tmp/herbar-zxing -n -v --backend zxing
+
+Compare the two runs' CSV logs (in `/tmp/herbar-zbar` / `/tmp/herbar-zxing`)
+for differences in which barcodes were decoded. To see actual file
+renames rather than a dry run, copy `image_test/` to a scratch
+directory first and point `-s` at the copy -- never at `image_test/`
+itself.
+
+The automated test suite above exercises the default `zbar` backend
+only. To run it against `zxing` instead, add `"--backend", "zxing"` to
+the `run_herbar()` helper in `tests/test_herbar.py`.
