@@ -4,9 +4,10 @@ A barcode renamer for herbarium specimens
 When herbarium specimens are photographed, each image is initially saved
 under a generic camera-assigned filename rather than the specimen's own
 barcode identifier. herbar.py scans a directory of specimen photos,
-decodes the CODE39 barcode printed on each specimen label (using
-[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar), and
-renames the image to that barcode value -- along with any matching raw
+decodes the CODE39 barcode printed on each specimen label (using either
+[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar or
+[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), selectable with
+`--backend`), and renames the image to that barcode value -- along with any matching raw
 archival file (CR2, CR3, NEF, DNG, etc.) captured alongside it. It
 handles the messy real-world cases that come up during a digitization
 batch: missing or unreadable barcodes, multiple barcodes on one image,
@@ -19,7 +20,11 @@ anything for real.
 
 Python 3.*  
 Pillow  
-zbar  
+A barcode decoding backend -- either works, selected at runtime with `--backend`:
+  - `zbar` (default) via [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar), which needs a separate
+    system ZBar install (see Installation below)
+  - `zxing` via [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), a self-contained wheel with no
+    system library dependency
 
 ### Getting the code
 
@@ -73,7 +78,7 @@ virtual environment, and install the required modules:
 
 	usage: herbar.py [-h] -s SOURCE [-p {TX,ANHC,VDB,TEST,Ferns,TORCH,EF}]
                  [-d DEFAULT_PREFIX] [-b BATCH] [-o [OUTPUT]] [-n] [-c CODE]
-                 [-v] [-j [JPEG_RENAME]]
+                 [-v] [-j [JPEG_RENAME]] [--backend {zbar,zxing}]
 
 	optional arguments:
 	-h, --help            show this help message and exit
@@ -104,6 +109,10 @@ virtual environment, and install the required modules:
 	-j [JPEG_RENAME], --jpeg_rename [JPEG_RENAME]
                         String will be added to JPEG file names to prevent
                         name conflicts downstream.
+	--backend {zbar,zxing}
+                        Barcode decoding library to use: 'zbar' (pyzbar,
+                        default) or 'zxing' (zxing-cpp). Only the backend
+                        you select needs to be installed -- see Requirements.
 
 ### Testing
 
