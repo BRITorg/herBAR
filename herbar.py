@@ -255,12 +255,12 @@ def get_default_barcode(barcodes=None, default_prefix=None):
         # not cases sensitive
         for barcode in barcodes:
             if barcode['data'].lower().startswith(default_prefix.lower()):
-                return barcode['data']
+                return barcode['data'], True
         # if no match, return first barcode
-        return barcodes[0]['data']
+        return barcodes[0]['data'], False
     else:
         # return first barcode if no default prefix is specified
-        return barcodes[0]['data']
+        return barcodes[0]['data'], False
 
 def walk(path=None):
     global files_analyzed, renames_failed, missing_barcodes, files_processed
@@ -296,17 +296,20 @@ def walk(path=None):
                     # TODO check barcode pattern
                     # Get first barcode value for file name
                     #barcode = barcodes[0]['data']
-                    barcode = get_default_barcode(barcodes=barcodes, default_prefix=default_prefix)
+                    barcode, prefix_matched = get_default_barcode(barcodes=barcodes, default_prefix=default_prefix)
                     # Handle multiple barcodes
-                    if default_prefix:
-                        # if a default prefix is designated, don't capture multiple barcodes
+                    if default_prefix and prefix_matched:
+                        # a default prefix was designated and matched a barcode, don't capture multiple barcodes
                         multi_string = ''
                     else:
                         if len(barcodes) > 1:
                             #print(barcodes)
                             barcode_values = [b['data'] for b in barcodes]
                             multi_string = '_BARCODES[' + ','.join(barcode_values) + ']'
-                            print('ALERT - multiple barcodes found. Using default barcode of', len(barcodes), ':', barcode)
+                            if default_prefix:
+                                print('ALERT - multiple barcodes found, none matched default prefix', default_prefix, '. Using default barcode of', len(barcodes), ':', barcode)
+                            else:
+                                print('ALERT - multiple barcodes found. Using default barcode of', len(barcodes), ':', barcode)
                         else:
                             # only one barcode, use empty multi value
                             multi_string = ''
