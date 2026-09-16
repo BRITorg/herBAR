@@ -16,7 +16,8 @@ from tqdm import tqdm
 # File extensions that are scanned and logged
 INPUT_FILE_TYPES = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.tif', '.TIF', '.TIFF', '.tiff']
 # File type extensions that are logged when filename matches a scanned input file
-ARCHIVE_FILE_TYPES = ['.CR3', '.cr3', '.CR2', '.cr2', '.RAW', '.raw', '.NEF', '.nef', '.DNG', '.dng']
+# compared case-insensitively, so case is not duplicated here
+ARCHIVE_FILE_TYPES = ['.cr3', '.cr2', '.raw', '.nef', '.dng']
 # Barcode symbologies accepted, others ignored
 ACCEPTED_SYMBOLOGIES = ['CODE39']
 # TODO add accepted barcode string patterns
@@ -276,16 +277,16 @@ def walk(path=None):
                 if barcodes:
                     file_stem = file_path.stem
                     # find archive files matching stem
+                    # compared case-insensitively so matching is consistent
+                    # regardless of the filesystem's own case sensitivity
                     arch_file_path = None
+                    file_stem_lower = file_stem.lower()
 
-                    for archive_extension in ARCHIVE_FILE_TYPES:
-                        potential_arch_file_name = file_stem + archive_extension
-                        potential_arch_file_path_string = os.path.join(file_path.parent, potential_arch_file_name)
-                        potential_arch_file_path = Path(potential_arch_file_path_string)
-                        # test if archive file exists
-                        # TODO change filename comparison to be case-sensitive
-                        if potential_arch_file_path.exists():
-                            arch_file_path = potential_arch_file_path
+                    for sibling in files:
+                        sibling_path = Path(sibling)
+                        if (sibling_path.stem.lower() == file_stem_lower
+                                and sibling_path.suffix.lower() in ARCHIVE_FILE_TYPES):
+                            arch_file_path = file_path.parent / sibling
                             # stop looking for archive file, go with first found
                             break
                     image_event_id = str(uuid.uuid4())
