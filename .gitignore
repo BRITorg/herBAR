@@ -4,6 +4,8 @@
 # Python
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
 
 # Local test/scratch data
 GAC_test/

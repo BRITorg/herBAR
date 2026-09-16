@@ -49,3 +49,17 @@ To install modules, use pip:
 	-j [JPEG_RENAME], --jpeg_rename [JPEG_RENAME]
                         String will be added to JPEG file names to prevent
                         name conflicts downstream.
+
+### Testing
+
+Tests run herbar.py against the real images in `image_test/`, decoding
+their actual barcodes. Each test copies the fixtures into a temporary
+directory before running, so `image_test/` itself is never modified and
+nothing needs to be reset between runs.
+
+	pip install -r requirements-dev.txt
+	pytest
+
+On Apple Silicon Macs where ZBar is only installed via an Intel-only
+Homebrew (`/usr/local`), create the virtualenv with `arch -x86_64
+python3 -m venv .venv` so it links against the matching zbar library.
