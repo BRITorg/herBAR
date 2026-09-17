@@ -5,8 +5,8 @@ When herbarium specimens are photographed, each image is initially saved
 under a generic camera-assigned filename rather than the specimen's own
 barcode identifier. herbar.py scans a directory of specimen photos,
 decodes the CODE39 barcode printed on each specimen label (using either
-[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar or
-[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), selectable with
+[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp) or
+[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar, selectable with
 `--backend`), and renames the image to that barcode value -- along with any matching raw
 archival file (CR2, CR3, NEF, DNG, etc.) captured alongside it. It
 handles the messy real-world cases that come up during a digitization
@@ -21,10 +21,10 @@ anything for real.
 Python 3.*  
 Pillow  
 A barcode decoding backend -- either works, selected at runtime with `--backend`:
-  - `zbar` (default) via [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar), which needs a separate
+  - `zxing` (default) via [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), a self-contained wheel
+    with no system library dependency
+  - `zbar` via [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar), which needs a separate
     system ZBar install (see Installation below)
-  - `zxing` via [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), a self-contained wheel with no
-    system library dependency
 
 ### Getting the code
 
@@ -58,14 +58,14 @@ binary, without a separate venv-create/activate step.
 
     uv run herbar.py -s <path-to-images>
 
-On Windows, pyzbar's wheel bundles the zbar DLL it needs, so a separate
-ZBar install typically isn't required. (Worth double-checking on your
-actual target machine before rolling this out broadly.)
+This installs both decoding backends. The default (`--backend zxing`)
+needs nothing further -- no system library required. If you use
+`--backend zbar` on Windows, pyzbar's wheel bundles the zbar DLL it
+needs, so a separate ZBar install typically isn't required (worth
+double-checking on your actual target machine before rolling this out
+broadly).
 
 #### Option B: pip + venv
-
-Install ZBar for your platform (https://zbar.sourceforge.net/) -- on
-macOS/Linux this is a separate system library pyzbar links against.
 
 Download the script file (herbar.py) to your local computer, create a
 virtual environment, and install the required modules:
@@ -73,6 +73,11 @@ virtual environment, and install the required modules:
 	python3 -m venv .venv
 	source .venv/bin/activate        # Windows: .venv\Scripts\activate
 	pip install -r requirements.txt
+
+This installs both decoding backends. The default (`--backend zxing`)
+needs nothing further. If you plan to use `--backend zbar` instead,
+also install ZBar for your platform (https://zbar.sourceforge.net/) --
+on macOS/Linux this is a separate system library pyzbar links against.
 
 ### Usage
 
@@ -110,9 +115,9 @@ virtual environment, and install the required modules:
                         String will be added to JPEG file names to prevent
                         name conflicts downstream.
 	--backend {zbar,zxing}
-                        Barcode decoding library to use: 'zbar' (pyzbar,
-                        default) or 'zxing' (zxing-cpp). Only the backend
-                        you select needs to be installed -- see Requirements.
+                        Barcode decoding library to use: 'zxing' (zxing-cpp,
+                        default) or 'zbar' (pyzbar). Only the backend you
+                        select needs to be installed -- see Requirements.
 
 ### Testing
 
@@ -124,40 +129,12 @@ nothing needs to be reset between runs.
 	pip install -r requirements-dev.txt
 	pytest
 
-On Apple Silicon Macs where ZBar is only installed via an Intel-only
-Homebrew (`/usr/local`), create the virtualenv with `arch -x86_64
-python3 -m venv .venv` so it links against the matching zbar library.
+This exercises the default `zxing` backend, which needs no system
+library. To run the suite against `zbar` instead, add `"--backend",
+"zbar"` to the `run_herbar()` helper in `tests/test_herbar.py` -- on
+Apple Silicon Macs where ZBar is only installed via an Intel-only
+Homebrew (`/usr/local`), that also requires creating the virtualenv
+with `arch -x86_64 python3 -m venv .venv` so it links against the
+matching zbar library.
 
 Alternatively, with uv: `uv sync --group dev` then `uv run pytest`.
-
-### Trying the `add-zxing-backend-option` branch
-
-This branch adds the `--backend` flag described above so `zbar` and
-`zxing-cpp` can be evaluated side by side before deciding whether to
-switch permanently. To check it out:
-
-	git fetch origin
-	git checkout add-zxing-backend-option
-	python3 -m venv .venv && source .venv/bin/activate
-	pip install -r requirements.txt
-
-(or `uv sync` instead of the venv/pip steps.) This installs both
-decoding backends, so no separate ZBar install is needed just to try
-`--backend zxing` -- useful on Apple Silicon Macs where ZBar is
-typically only available as an Intel-only Homebrew build.
-
-Run herbar.py against the real photos in `image_test/` with each
-backend in turn, using `-n` (dry-run) so nothing is actually renamed:
-
-	python3 herbar.py -s image_test -o /tmp/herbar-zbar  -n -v --backend zbar
-	python3 herbar.py -s image_test -o /tmp/herbar-zxing -n -v --backend zxing
-
-Compare the two runs' CSV logs (in `/tmp/herbar-zbar` / `/tmp/herbar-zxing`)
-for differences in which barcodes were decoded. To see actual file
-renames rather than a dry run, copy `image_test/` to a scratch
-directory first and point `-s` at the copy -- never at `image_test/`
-itself.
-
-The automated test suite above exercises the default `zbar` backend
-only. To run it against `zxing` instead, add `"--backend", "zxing"` to
-the `run_herbar()` helper in `tests/test_herbar.py`.

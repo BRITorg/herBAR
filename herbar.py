@@ -253,10 +253,10 @@ def decode_zxing(image):
 def get_barcodes(file_path=None):
     # read barcodes from JPG using the selected decoder backend
     image = Image.open(file_path)
-    if backend == 'zxing':
-        raw_barcodes = decode_zxing(image)
-    else:
+    if backend == 'zbar':
         raw_barcodes = decode_zbar(image)
+    else:
+        raw_barcodes = decode_zxing(image)
 
     if raw_barcodes:
         matching_barcodes = []
@@ -432,8 +432,8 @@ if __name__ == "__main__":
         help="Detailed output for each file processed.")
     ap.add_argument("-j", "--jpeg_rename", nargs='?', default=False, const=JPG_RENAME_STRING,
         help="String will be added to JPEG file names to prevent name conflicts downstream.")
-    ap.add_argument("--backend", required=False, choices=BACKENDS, default='zbar',
-        help="Barcode decoding library to use: 'zbar' (pyzbar, default) or 'zxing' (zxing-cpp).")
+    ap.add_argument("--backend", required=False, choices=BACKENDS, default='zxing',
+        help="Barcode decoding library to use: 'zxing' (zxing-cpp, default) or 'zbar' (pyzbar).")
     args = vars(ap.parse_args())
 
     analysis_start_time = datetime.now()
