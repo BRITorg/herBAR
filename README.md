@@ -4,9 +4,10 @@ A barcode renamer for herbarium specimens
 When herbarium specimens are photographed, each image is initially saved
 under a generic camera-assigned filename rather than the specimen's own
 barcode identifier. herbar.py scans a directory of specimen photos,
-decodes the CODE39 barcode printed on each specimen label (using
-[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar), and
-renames the image to that barcode value -- along with any matching raw
+decodes the CODE39 barcode printed on each specimen label (using either
+[pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar)/ZBar or
+[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), selectable with
+`--backend`), and renames the image to that barcode value -- along with any matching raw
 archival file (CR2, CR3, NEF, DNG, etc.) captured alongside it. It
 handles the messy real-world cases that come up during a digitization
 batch: missing or unreadable barcodes, multiple barcodes on one image,
@@ -19,7 +20,11 @@ anything for real.
 
 Python 3.*  
 Pillow  
-zbar  
+A barcode decoding backend -- either works, selected at runtime with `--backend`:
+  - `zbar` (default) via [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar), which needs a separate
+    system ZBar install (see Installation below)
+  - `zxing` via [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), a self-contained wheel with no
+    system library dependency
 
 ### Getting the code
 
@@ -73,7 +78,7 @@ virtual environment, and install the required modules:
 
 	usage: herbar.py [-h] -s SOURCE [-p {TX,ANHC,VDB,TEST,Ferns,TORCH,EF}]
                  [-d DEFAULT_PREFIX] [-b BATCH] [-o [OUTPUT]] [-n] [-c CODE]
-                 [-v] [-j [JPEG_RENAME]]
+                 [-v] [-j [JPEG_RENAME]] [--backend {zbar,zxing}]
 
 	optional arguments:
 	-h, --help            show this help message and exit
@@ -104,6 +109,10 @@ virtual environment, and install the required modules:
 	-j [JPEG_RENAME], --jpeg_rename [JPEG_RENAME]
                         String will be added to JPEG file names to prevent
                         name conflicts downstream.
+	--backend {zbar,zxing}
+                        Barcode decoding library to use: 'zbar' (pyzbar,
+                        default) or 'zxing' (zxing-cpp). Only the backend
+                        you select needs to be installed -- see Requirements.
 
 ### Testing
 
@@ -120,3 +129,35 @@ Homebrew (`/usr/local`), create the virtualenv with `arch -x86_64
 python3 -m venv .venv` so it links against the matching zbar library.
 
 Alternatively, with uv: `uv sync --group dev` then `uv run pytest`.
+
+### Trying the `add-zxing-backend-option` branch
+
+This branch adds the `--backend` flag described above so `zbar` and
+`zxing-cpp` can be evaluated side by side before deciding whether to
+switch permanently. To check it out:
+
+	git fetch origin
+	git checkout add-zxing-backend-option
+	python3 -m venv .venv && source .venv/bin/activate
+	pip install -r requirements.txt
+
+(or `uv sync` instead of the venv/pip steps.) This installs both
+decoding backends, so no separate ZBar install is needed just to try
+`--backend zxing` -- useful on Apple Silicon Macs where ZBar is
+typically only available as an Intel-only Homebrew build.
+
+Run herbar.py against the real photos in `image_test/` with each
+backend in turn, using `-n` (dry-run) so nothing is actually renamed:
+
+	python3 herbar.py -s image_test -o /tmp/herbar-zbar  -n -v --backend zbar
+	python3 herbar.py -s image_test -o /tmp/herbar-zxing -n -v --backend zxing
+
+Compare the two runs' CSV logs (in `/tmp/herbar-zbar` / `/tmp/herbar-zxing`)
+for differences in which barcodes were decoded. To see actual file
+renames rather than a dry run, copy `image_test/` to a scratch
+directory first and point `-s` at the copy -- never at `image_test/`
+itself.
+
+The automated test suite above exercises the default `zbar` backend
+only. To run it against `zxing` instead, add `"--backend", "zxing"` to
+the `run_herbar()` helper in `tests/test_herbar.py`.

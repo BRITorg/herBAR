@@ -9,7 +9,6 @@ import os
 import platform
 from PIL import Image
 from pathlib import Path
-from pyzbar.pyzbar import decode
 import string
 from tqdm import tqdm
 
@@ -20,6 +19,8 @@ INPUT_FILE_TYPES = ['.jpg', '.jpeg', '.JPG', '.JPEG', '.tif', '.TIF', '.TIFF', '
 ARCHIVE_FILE_TYPES = ['.cr3', '.cr2', '.raw', '.nef', '.dng']
 # Barcode symbologies accepted, others ignored
 ACCEPTED_SYMBOLOGIES = ['CODE39']
+# Barcode decoding backends supported by get_barcodes()
+BACKENDS = ['zbar', 'zxing']
 # TODO add accepted barcode string patterns
 FIELD_DELIMITER = ','  # delimiter used in output CSV
 PROJECT_IDS = ['TX', 'ANHC', 'VDB', 'TEST', 'Ferns', 'TORCH', 'EF']
@@ -231,19 +232,40 @@ def rename(file_path=None, new_stem=None):
                 print("Unexpected error:", e)
                 raise
 
+def decode_zbar(image):
+    try:
+        from pyzbar.pyzbar import decode
+    except ImportError:
+        raise SystemExit("--backend zbar requires pyzbar. Run: pip install pyzbar")
+    return [
+        {'type': str(result.type), 'data': result.data.decode('UTF-8')}
+        for result in decode(image)]
+
+def decode_zxing(image):
+    try:
+        import zxingcpp
+    except ImportError:
+        raise SystemExit("--backend zxing requires zxing-cpp. Run: pip install zxing-cpp")
+    return [
+        {'type': result.format.name.upper(), 'data': result.text}
+        for result in zxingcpp.read_barcodes(image)]
+
 def get_barcodes(file_path=None):
-    # read barcodes from JPG
-    barcodes = decode(Image.open(file_path))
-    matching_barcodes = []
-    if barcodes:
-        for barcode in barcodes:
+    # read barcodes from JPG using the selected decoder backend
+    image = Image.open(file_path)
+    if backend == 'zxing':
+        raw_barcodes = decode_zxing(image)
+    else:
+        raw_barcodes = decode_zbar(image)
+
+    if raw_barcodes:
+        matching_barcodes = []
+        for barcode in raw_barcodes:
             # Keep only codes that match accepted symbologies
-            if str(barcode.type) in ACCEPTED_SYMBOLOGIES:
-                symbology_type = str(barcode.type)
-                data = barcode.data.decode('UTF-8')
-                matching_barcodes.append({'type':symbology_type, 'data':data})
+            if barcode['type'] in ACCEPTED_SYMBOLOGIES:
+                matching_barcodes.append(barcode)
                 if verbose:
-                    print(symbology_type, data)
+                    print(barcode['type'], barcode['data'])
         return matching_barcodes
     else:
         print('No barcodes found:', file_path)
@@ -410,6 +432,8 @@ if __name__ == "__main__":
         help="Detailed output for each file processed.")
     ap.add_argument("-j", "--jpeg_rename", nargs='?', default=False, const=JPG_RENAME_STRING,
         help="String will be added to JPEG file names to prevent name conflicts downstream.")
+    ap.add_argument("--backend", required=False, choices=BACKENDS, default='zbar',
+        help="Barcode decoding library to use: 'zbar' (pyzbar, default) or 'zxing' (zxing-cpp).")
     args = vars(ap.parse_args())
 
     analysis_start_time = datetime.now()
@@ -421,6 +445,7 @@ if __name__ == "__main__":
     verbose = args["verbose"]
     output_location = args["output"]
     jpeg_rename = args["jpeg_rename"]
+    backend = args["backend"]
     #print('prepend_code', prepend_code)
 
     if args["batch"]:
